@@ -38,7 +38,7 @@ class HttpCoreClientPool(val ec: ExecutionContext, client: ScalaHttpClientPool) 
 
           client.execute(host, req)
             .map { response =>
-              info(s"Core Http received from ${httpCoreRequest.getUrl} status=${response.status.code} " +
+              debug(s"Core Http received from ${httpCoreRequest.getUrl} status=${response.status.code} " +
                 s"- statusText=${response.status.reason}")
               new ScalaHttpUrlConnection(
                 response.status.code,
@@ -46,9 +46,11 @@ class HttpCoreClientPool(val ec: ExecutionContext, client: ScalaHttpClientPool) 
                 getResponseHeaders(response),
                 readResponseBody(response, isOnError(response.status.code)))
             }
-            .map(r => httpCoreRequest.complete(r, null)).asScala()
+            .map(r => {
+              httpCoreRequest.complete(r, null)
+            }).asScala()
         case Failure(exception) => Future(httpCoreRequest.complete(null, new Error(ErrorCode.HTTP_ERROR, s"Failed to parse url ${httpCoreRequest.getUrl} => ${exception.getMessage}")))
-      }
+      }.andThen { case _ => httpCoreRequest.destroy() }
 
   private def content(coreRequest: HttpRequest): Option[Buf] =
     if (coreRequest.getBody.nonEmpty) Some(Buf.ByteArray.Owned(coreRequest.getBody))

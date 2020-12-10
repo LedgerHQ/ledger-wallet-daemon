@@ -44,8 +44,8 @@ class ScalaHttpClientPool extends Logging {
     serviceForHost(host)(request).map(response => {
       info(s"Received from ${request.host.getOrElse("No host")} - ${request.uri} status=${response.status.code} " +
         s" - statusText=${response.status.reason} - " +
-        s"Request : $request - (Payload : ${Utils.preview(request.getContentString(), 200)}) - " +
-        s"Response : $response - (Payload : ${Utils.preview(response.getContentString(), 200)})")
+        s"Request : $request - (Payload : ${Utils.preview(request.getContentString(), 1000)}) - " +
+        s"Response : $response - (Payload : ${Utils.preview(response.getContentString(), 1000)})")
       response
     }).onFailure(th => error(s"Failed to execute request on host $host with request $request. Error message : ${th.getMessage}", th))
 }

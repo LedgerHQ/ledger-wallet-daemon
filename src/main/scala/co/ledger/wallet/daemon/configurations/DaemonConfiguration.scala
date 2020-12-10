@@ -15,7 +15,7 @@ object DaemonConfiguration extends Logging {
   private val config = ConfigFactory.load()
   private val DEFAULT_SYNC_INTERVAL: Int = 60 // 60 seconds
   private val DEFAULT_RESYNC_CHECK_INTERVAL: Int = 3 // 5 seconds
-  private val DEFAULT_SYNC_STATUS_CHECK_INTERVAL: Int = 3 // 3 seconds
+  private val DEFAULT_SYNC_ON_GOING: Int = 2 // 2 synchronizations at a time
   private val DEFAULT_SYNC_ACCOUNT_REGISTER_INTERVAL: Int = 600 // 10 mins
   // Default value for keeping alive connections inside the client connection pool
   private val DEFAULT_CLIENT_CONNECTION_TTL: Int = 120 // 120 seconds
@@ -83,17 +83,17 @@ object DaemonConfiguration extends Logging {
     else {
       DEFAULT_SYNC_ACCOUNT_REGISTER_INTERVAL
     }
-    val syncStatusCheckInterval: Int = if (config.hasPath("synchronization.sync_status_check_interval_in_seconds")) {
-      config.getInt("synchronization.sync_status_check_interval_in_seconds")
-    }
-    else {
-      DEFAULT_SYNC_STATUS_CHECK_INTERVAL
-    }
     val resyncCheckInterval: Int = if (config.hasPath("synchronization.resync_check_interval_in_seconds")) {
       config.getInt("synchronization.resync_check_interval_in_seconds")
     }
     else {
       DEFAULT_RESYNC_CHECK_INTERVAL
+    }
+    val maxOnGoing: Int = if (config.hasPath("synchronization.max_sync_ongoing")) {
+      config.getInt("synchronization.max_sync_ongoing")
+    }
+    else {
+      DEFAULT_SYNC_ON_GOING
     }
   }
 

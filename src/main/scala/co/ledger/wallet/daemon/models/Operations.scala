@@ -12,13 +12,14 @@ import co.ledger.wallet.daemon.models.coins.{Bitcoin, EthereumTransactionView, R
 import com.fasterxml.jackson.annotation.JsonProperty
 
 import scala.collection.JavaConverters._
+
 import scala.concurrent.Future
 
 object Operations {
-  def confirmations(operation: core.Operation, wallet: core.Wallet): Future[Long] = {
+  def confirmations(height: Option[Long], wallet: core.Wallet): Future[Long] = {
     for {
       currentHeight <- wallet.lastBlockHeight
-    } yield Option(operation.getBlockHeight) match {
+    } yield height match {
       case Some(opHeight) => currentHeight - opHeight + 1
       case None => 0L
     }
@@ -37,9 +38,9 @@ object Operations {
   }
 
   def getView(operation: core.Operation, wallet: core.Wallet, account: core.Account): Future[OperationView] = {
-    val height: Long = operation.getBlockHeight
+    val height = Option(operation.getBlockHeight).map { Long2long }
     for {
-      confirms <- confirmations(operation, wallet)
+      confirms <- confirmations(height, wallet)
       curFamily = operation.getWalletType
     } yield OperationView(
       operation.getUid,
@@ -48,7 +49,7 @@ object Operations {
       Option(operation.getTrust).map(getTrustIndicatorView),
       confirms,
       operation.getDate,
-      Option(height),
+      height,
       operation.getOperationType,
       operation.getAmount.toString,
       operation.getFees.toString,

@@ -32,7 +32,7 @@ class PoolsService @Inject()(daemonCache: DaemonCache, accountSynchronizer: Acco
   def removePool(poolInfo: PoolInfo): Future[Unit] = {
     daemonCache.getWalletPool(poolInfo).flatMap(pool => pool.fold(
       Future.failed[Unit](WalletPoolNotFoundException(poolInfo.poolName))
-    )(p => accountSynchronizer.unregisterPool(p, poolInfo)
+    )(_ => accountSynchronizer.unregisterPool(poolInfo)
     )).flatMap(_ => daemonCache.deleteWalletPool(poolInfo))
       .map(_ => info(s"Pool $poolInfo has been deleted"))
   }

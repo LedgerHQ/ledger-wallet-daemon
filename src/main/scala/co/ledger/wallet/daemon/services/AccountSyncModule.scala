@@ -1,29 +1,37 @@
 package co.ledger.wallet.daemon.services
 
-import akka.actor.{ActorRef, ActorSystem, Props}
-import co.ledger.core.{Account, Wallet}
+import akka.actor.{ActorRef, ActorRefFactory, ActorSystem, Props}
 import co.ledger.wallet.daemon.database.DaemonCache
-import co.ledger.wallet.daemon.modules.PublisherModule
-import co.ledger.wallet.daemon.services.AccountOperationsPublisher.PoolName
-import com.google.inject.{AbstractModule, Provides, Singleton}
+import co.ledger.wallet.daemon.modules.PublisherModule.OperationsPublisherFactory
+import com.google.inject.{AbstractModule, Provides}
 import com.twitter.concurrent.NamedPoolThreadFactory
 import com.twitter.util.{ScheduledThreadPoolTimer, Timer}
+import javax.inject.{Named, Singleton}
 
 object AccountSyncModule extends AbstractModule {
-  type AccountSynchronizerFactory = (DaemonCache, Account, Wallet, PoolName) => ActorRef
+  type AccountSynchronizerWatchdogFactory = () => ActorRef
+  type AccountSynchronizerFactory = (ActorRefFactory, ActorRef) => ActorRef
 
   @Provides def providesTimer: Timer = new ScheduledThreadPoolTimer(
     poolSize = 1,
     threadFactory = new NamedPoolThreadFactory("AccountSynchronizer-Scheduler")
   )
 
-  @Provides @Singleton
-  def providesAccountSynchronizer(actorSystem: ActorSystem, publisherFactory : PublisherModule.OperationsPublisherFactory ) : AccountSynchronizerFactory = {
-    (cache, a, w, p ) => actorSystem.actorOf(
-      Props(new AccountSynchronizer(cache, a, w, p, publisherFactory))
+  @Provides
+  @Singleton
+  @Named("AccountSynchronizerWatchdog")
+  def providesAccountSynchronizerWatchdog(system: ActorSystem, cache: DaemonCache, timer: Timer, @Named("AccountSynchronizer") synchronizer: ActorRef, publisherFactory: OperationsPublisherFactory): ActorRef = {
+    system.actorOf(Props(classOf[AccountSynchronizerWatchdog], cache, timer, synchronizer, publisherFactory)
       .withDispatcher(SynchronizationDispatcher.configurationKey(SynchronizationDispatcher.Synchronizer)),
-      name = AccountSynchronizer.name(a, w, p)
-    )
+        "akka-account-synchronizer-watchdog"
+      )
+  }
+
+  @Provides
+  @Singleton
+  @Named("AccountSynchronizer")
+  def providesAccountSynchronizer(system: ActorSystem): ActorRef = {
+    system.actorOf(Props(new AccountSynchronizer()).withMailbox("account-synchronizer-mailbox"), "akka-account-synchronizer")
   }
 
   override def configure(): Unit = ()

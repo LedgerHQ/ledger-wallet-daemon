@@ -1,5 +1,5 @@
 name := "wallet-daemon"
-version := "2.9.1-rc.3"
+version := "3.0.0-rc.10"
 organization := "co.ledger"
 scalaVersion := "2.12.10"
 buildInfoPackage := "co.ledger.wallet.daemon"
@@ -34,7 +34,7 @@ test in assembly := {}
 
 // Use test configuration files
 // Use test fixtures and resources in integration tests
-unmanagedResourceDirectories in IntegrationTest += baseDirectory.value / "src" / "test" / "resources"
+unmanagedResourceDirectories in IntegrationTest += baseDirectory.value / "src" / "it" / "resources"
 
 // -a: Show full stack traces
 // -q: Hide logs for successful tests
@@ -96,7 +96,6 @@ lazy val versions = new {
   val junitI     = "0.11"
   val h2         = "1.4.192"
   val logback    = "1.1.7"
-  val mockito    = "1.9.5"
   val postgres   = "42.2.12"
   val scalacheck = "1.13.4"
   val scalatest  = "3.0.0"
@@ -110,6 +109,7 @@ lazy val versions = new {
   val rabbitmq   = "5.9.0"
   val akka       = "2.6.10"
   val akkaRabbitMQ = "6.0.0"
+  val scalaredis = "3.30"
 }
 // scalastyle:on
 
@@ -143,9 +143,9 @@ lazy val root = (project in file("."))
       "com.typesafe.akka"            %% "akka-actor"             % versions.akka,
       "com.typesafe.akka"            %% "akka-slf4j"             % versions.akka,
       "com.newmotion"                %% "akka-rabbitmq"          % versions.akkaRabbitMQ,
+      "net.debasishg"                %% "redisclient"            % versions.scalaredis,
 
-
-// Tests dependencies
+      // Tests dependencies
       "org.specs2"                   %% "specs2-mock"            % versions.specs2     % "it",
       "com.google.inject.extensions" %  "guice-testlib"          % versions.guice      % "it",
       "com.novocode"                 %  "junit-interface"        % versions.junitI     % "it",
@@ -163,7 +163,8 @@ lazy val root = (project in file("."))
       "com.twitter"                  %% "inject-server"          % versions.finatra    % "it" classifier "tests",
       "com.twitter"                  %% "inject-app"             % versions.finatra    % "it" classifier "tests",
       "com.twitter"                  %% "inject-core"            % versions.finatra    % "it" classifier "tests",
-      "com.twitter"                  %% "inject-modules"         % versions.finatra    % "it" classifier "tests"
+      "com.twitter"                  %% "inject-modules"         % versions.finatra    % "it" classifier "tests",
+      "com.typesafe.akka"            %% "akka-testkit"           % versions.akka       % "it"
     )
   )
 

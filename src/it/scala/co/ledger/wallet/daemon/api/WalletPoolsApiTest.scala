@@ -7,15 +7,26 @@ import co.ledger.wallet.daemon.utils.APIFeatureTest
 import com.twitter.finagle.http.Status
 
 class WalletPoolsApiTest extends APIFeatureTest {
+  val poolNameA = "pool_a"
+  val poolNameB = "pool_b"
+  val poolNameC = "pool_c"
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+  }
 
   test("WalletPoolsApi#Create and list single pool") {
-    createPool("my_pool")
+    createPool(poolNameA)
     try {
       val pools = parse[List[models.WalletPoolView]](getPools())
-      val pool = parse[models.WalletPoolView](getPool("my_pool"))
+      val pool = parse[models.WalletPoolView](getPool(poolNameA))
       assert(pools.contains(pool))
     } finally {
-      deletePool("my_pool")
+      deletePool(poolNameA)
     }
   }
 
@@ -30,39 +41,40 @@ class WalletPoolsApiTest extends APIFeatureTest {
   }
 
   test("WalletPoolsApi#Create and list multiple pool") {
-    createPool("this_pool")
-    createPool("your_pool")
+    createPool(poolNameB)
+    createPool(poolNameC)
     val pools = parse[List[models.WalletPoolView]](getPools())
-    List(WalletPoolView("your_pool", 0), WalletPoolView("this_pool", 0)).map { pool => assert(pools.contains(pool))}
-    deletePool("your_pool")
-    deletePool("this_pool")
+    List(WalletPoolView(poolNameC, 0), WalletPoolView(poolNameB, 0)).map { pool => assert(pools.contains(pool)) }
+    deletePool(poolNameC)
+    deletePool(poolNameB)
     val pools2 = parse[List[models.WalletPoolView]](getPools())
-    List(WalletPoolView("your_pool", 0), WalletPoolView("this_pool", 0)).map { pool => assert(!pools2.contains(pool))}
+    List(WalletPoolView(poolNameB, 0), WalletPoolView(poolNameB, 0))
+      .foreach { pool => assert(!pools2.contains(pool)) }
   }
 
   test("WalletPoolsApi#Get single pool") {
-    val response = createPool("anotha_pool")
-    assert(server.mapper.objectMapper.readValue[models.WalletPoolView](response.contentString) == WalletPoolView("anotha_pool", 0))
-    val pool = parse[models.WalletPoolView](getPool("anotha_pool"))
-    assert(pool == WalletPoolView("anotha_pool", 0))
-    deletePool("anotha_pool")
+    val response = createPool(poolNameA)
+    assert(server.mapper.objectMapper.readValue[models.WalletPoolView](response.contentString) == WalletPoolView(poolNameA, 0))
+    val pool = parse[models.WalletPoolView](getPool(poolNameA))
+    assert(pool == WalletPoolView(poolNameA, 0))
+    deletePool(poolNameA)
   }
 
   test("WalletPoolsApi#Get and delete non-exist pool return not found") {
     assert(
       server.mapper.objectMapper.readValue[ErrorResponseBody](getPool("not_exist_pool", Status.NotFound).contentString).rc
         == ErrorCode.Not_Found)
-    assert(deletePool("another_not_exist_pool").contentString === "")
+    deletePool("another_not_exist_pool", Status.BadRequest)
   }
 
   test("WalletPoolsApi#Create same pool twice return ok") {
     assert(
-      server.mapper.objectMapper.readValue[models.WalletPoolView](createPool("same_pool").contentString)
-        == WalletPoolView("same_pool", 0))
+      server.mapper.objectMapper.readValue[models.WalletPoolView](createPool(poolNameB).contentString)
+        == WalletPoolView(poolNameB, 0))
     assert(
-      server.mapper.objectMapper.readValue[models.WalletPoolView](createPool("same_pool").contentString)
-        == WalletPoolView("same_pool", 0))
-    deletePool("same_pool")
+      server.mapper.objectMapper.readValue[models.WalletPoolView](createPool(poolNameB).contentString)
+        == WalletPoolView(poolNameB, 0))
+    deletePool(poolNameB)
   }
 
 }

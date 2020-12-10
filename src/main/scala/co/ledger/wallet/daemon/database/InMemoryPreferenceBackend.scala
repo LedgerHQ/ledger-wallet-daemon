@@ -9,6 +9,9 @@ import com.twitter.inject.Logging
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+/**
+  * DO NOT USE IN PRODUCTION !!
+  */
 class InMemoryPreferenceBackend() extends PreferencesBackend with Logging {
   type KeyPref = ByteBuffer
   type ValuePref = ByteBuffer

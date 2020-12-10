@@ -24,4 +24,8 @@ trait ERC20Dao {
     */
   def findERC20OperationsByUids(a: Account, w: Wallet, filteredUids: Seq[ERC20OperationUid], offset: Int, limit: Int): Future[Seq[OperationView]]
 
+  /**
+    * List erc20 operations from an account starting at specified block height
+    */
+  def findERC20OperationsFromBlockHeight(a: Account, w: Wallet, blockHeight: Long, offset: Int, limit: Int): Future[Seq[OperationView]]
 }

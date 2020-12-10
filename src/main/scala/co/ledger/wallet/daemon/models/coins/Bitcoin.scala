@@ -23,7 +23,7 @@ object Bitcoin {
       HexUtils.valueOf(from.getP2SHVersion),
       HexUtils.valueOf(from.getXPUBVersion),
       from.getFeePolicy.name,
-      from.getDustAmount,
+      from.getDust,
       from.getMessagePrefix,
       from.getUsesTimestampedTransaction,
       hasNativeSegwitSupport = DaemonConfiguration.supportedNativeSegwitCurrencies.contains(currencyName)

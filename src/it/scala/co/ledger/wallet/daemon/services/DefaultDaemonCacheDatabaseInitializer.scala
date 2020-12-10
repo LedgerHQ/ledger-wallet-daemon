@@ -36,6 +36,6 @@ trait DefaultDaemonCacheDatabaseInitializer extends BeforeAndAfterAll {
     wallet
   }
 
-  private val WALLET_NAME = "WALLET_NAME"
-  private val POOL_NAME = "POOL_NAME"
+  private val WALLET_NAME = "default_test_wallet"
+  private val POOL_NAME = "default_test_pool"
 }

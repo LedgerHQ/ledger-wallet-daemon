@@ -23,7 +23,7 @@ class CurrenciesApiTest extends APIFeatureTest {
       UnitView("milli-bitcoin", "mBTC", "mBTC", 5),
       UnitView("micro-bitcoin", "μBTC", "μBTC", 2),
     ),
-    BitcoinNetworkParamsView("btc_testnet", "6F", "C4", "043587CF", "PER_BYTE", 546, "Bitcoin signed message:\n",
+    BitcoinNetworkParamsView("btc_testnet", "6F", "C4", "043587CF", "PER_BYTE", 3000, "Bitcoin signed message:\n",
       usesTimeStampedTransaction = false, hasNativeSegwitSupport = true)
   )
   private val EXPECTED_BTC_CURRENCY = CurrencyView(
@@ -34,7 +34,7 @@ class CurrenciesApiTest extends APIFeatureTest {
       UnitView("milli-bitcoin", "mBTC", "mBTC", 5),
       UnitView("micro-bitcoin", "μBTC", "μBTC", 2),
     ),
-    BitcoinNetworkParamsView("btc", "00", "05", "0488B21E", "PER_BYTE", 546, "Bitcoin signed message:\n",
+    BitcoinNetworkParamsView("btc", "00", "05", "0488B21E", "PER_BYTE", 3000, "Bitcoin signed message:\n",
       usesTimeStampedTransaction = false, hasNativeSegwitSupport = true)
   )
 

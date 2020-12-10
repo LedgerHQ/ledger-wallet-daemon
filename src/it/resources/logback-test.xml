@@ -1,0 +1,25 @@
+<configuration>
+    <appender name="STDOUT-test" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder immediateFlush="true">
+            <pattern>%date %thread TraceId=%X{traceId} [%level] %logger{0} : %msg%n</pattern>
+        </encoder>
+    </appender>
+    <variable name="LOG_LEVEL" value="${LOG_LEVEL:-WARN}" />
+    <variable name="CORE_LOG_LEVEL" value="${CORE_LOG_LEVEL:-WARN}" />
+    <variable name="DAEMON_LOG_LEVEL" value="${DAEMON_LOG_LEVEL:-WARN}" />
+    <variable name="SLICK_LOG_LEVEL" value="${SLICK_LOG_LEVEL:-WARN}" />
+    <variable name="NETTY_LOG_LEVEL" value="${NETTY_LOG_LEVEL:-WARN}" />
+    <variable name="FINATRA_LOG_LEVEL" value="${FINATRA_LOG_LEVEL:-WARN}" />
+    <variable name="DJINNI_LOG_LEVEL" value="${DJINNI_LOG_LEVEL:-WARN}" />
+    <variable name="SYNCHRONIZER_LOG_LEVEL" value="${SYNCHRONIZER_LOG_LEVEL:-WARN}" />
+
+    <logger name="co.ledger.wallet.daemon.libledger_core" level="${CORE_LOG_LEVEL}" />
+    <logger name="co.ledger.wallet.daemon" level="${DAEMON_LOG_LEVEL}" />
+    <logger name="slick" level="${SLICK_LOG_LEVEL}" />
+    <logger name="io.netty" level="${NETTY_LOG_LEVEL}" />
+    <logger name="com.twitter" level="${FINATRA_LOG_LEVEL}" />
+    <logger name="djinni" level="${DJINNI_LOG_LEVEL}" />
+    <root level="${LOG_LEVEL}">
+        <appender-ref ref="ASYNC" />
+    </root>
+</configuration>

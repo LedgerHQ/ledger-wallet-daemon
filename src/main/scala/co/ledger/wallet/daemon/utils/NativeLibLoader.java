@@ -5,13 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,7 +49,7 @@ public class NativeLibLoader {
 
     // Load native libs from canonical locations
     public static void loadLibs() throws URISyntaxException, IOException {
-        System.out.println("Loading");
+        log.log(Level.FINE, "Starting core libs loading...");
         // Try to load from Jar
         loadLibsFromJarPath(djinniNativeLibsJarPath);
 
@@ -101,15 +95,15 @@ public class NativeLibLoader {
 
         log.log(Level.FINE, "Loading libs from jar path " + jarPath);
 
+        FileSystem fs = getFileSystem(libsURL);
+
         // Walk the directory and load libs
-        FileSystem fs =
-                FileSystems.newFileSystem(libsURL.toURI(), Collections.<String, String>emptyMap());
         Path myPath = fs.getPath(jarPath);
 
         DirectoryStream<Path> directoryStream = Files.newDirectoryStream(myPath);
         try {
             for (Path p : directoryStream) {
-                System.out.println(p.toString());
+                log.log(Level.FINE, String.format("Loading %s", p.toString()));
                 loadLibFromJarPath(p);
             }
         } finally {
@@ -117,6 +111,14 @@ public class NativeLibLoader {
         }
 
         fs.close();
+    }
+
+    public static FileSystem getFileSystem(URL libsURL) throws URISyntaxException, IOException {
+        try {
+            return FileSystems.getFileSystem(libsURL.toURI());
+        } catch (final FileSystemNotFoundException ex) {
+            return FileSystems.newFileSystem(libsURL.toURI(), Collections.<String, String>emptyMap());
+        }
     }
 
     // Load a single native lib from a jar resource with path `libPath`

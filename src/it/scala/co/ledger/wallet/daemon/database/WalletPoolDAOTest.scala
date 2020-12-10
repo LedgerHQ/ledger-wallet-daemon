@@ -23,7 +23,7 @@ class WalletPoolDAOTest extends AssertionsForJUnit with Logging {
   NativeLibLoader.loadLibs()
 
   val xpubBtc1: String = "xpub6D4waFVPfPCpefXd5Rwb9TRuhoW7WZfYTS4cjv6Cw7ZBvFURHFFVYV2GF8hD36r31iDwBuP71TAEmy9596SnA7Hi6bgCLo6DYb7UUVqWWPA"
-  val xpubEth1: String = "XPUBETH"
+  val xpubEth1: String = "xpub6BemYiVNp19a2agTdnZuYi28C7ZwYx7nExX3o6owBp9Acsg2v3QnyioYXDeNV7CZa53SFhoLpGmNkE3wLrdTQ53haoedVhwGXP2MLkNTyoq"
   val stellarPubKey1: String = "a1083d11720853a2c476a07e29b64e0f9eb2ff894f1e485628faa7b63de77a4f"
   val daemonCache: DaemonCache = new DefaultDaemonCache()
   val poolName = "walletpooldao"
@@ -45,7 +45,6 @@ class WalletPoolDAOTest extends AssertionsForJUnit with Logging {
     account
   }
 
-
   @Test def testBitcoinWallet(): Unit = {
     val poolDao = new WalletPoolDao(poolName)
     val walletName = "bitcoin"
@@ -57,30 +56,30 @@ class WalletPoolDAOTest extends AssertionsForJUnit with Logging {
     val account = createAccountAndSync(wallet, derivations)
 
     val allOperations = TwitterAwait.result(poolDao.listAllOperations(account, wallet, 0, 1000))
-    logger.info(s" All operations : ${allOperations.size}")
+    assert(allOperations.size === 596)
 
     val filteredOperations = TwitterAwait.result(
       poolDao.findOperationsByUids(account, wallet,
         Seq(
-          "20b028fbccb1329be368c680a1e884139b1b07f9501726b9b911f60b5c6c855f",
-          "f802a15c2c5a654fa42ae65e46158f30feb8a07ecaf26ed2d64ed90da1fe7cf7",
-          "3479299812467aa58192e0bc0a54c085ab11db2f5172bdbc4b6273ea791e82d4"
+          "313b7bd7ae0eb9b2b45b1be568de5e4d6f045f9bf049263c90d9f97814c647fb",
+          "9c475196a18a6e0b8ccd1e472a218e4234ba5af2b6bfc0b8611beff6eac045ab",
+          "37ffcc3a2ad0051111c533568b7a4dc4b87376ee8e6f5c7bf393bd456040c5a0"
         ), 0, 100))
     assert(filteredOperations.size == 3)
     val filteredOperationsWithLimit = TwitterAwait.result(
       poolDao.findOperationsByUids(account, wallet,
         Seq(
-          "20b028fbccb1329be368c680a1e884139b1b07f9501726b9b911f60b5c6c855f",
-          "f802a15c2c5a654fa42ae65e46158f30feb8a07ecaf26ed2d64ed90da1fe7cf7",
-          "3479299812467aa58192e0bc0a54c085ab11db2f5172bdbc4b6273ea791e82d4"
+          "313b7bd7ae0eb9b2b45b1be568de5e4d6f045f9bf049263c90d9f97814c647fb",
+          "9c475196a18a6e0b8ccd1e472a218e4234ba5af2b6bfc0b8611beff6eac045ab",
+          "37ffcc3a2ad0051111c533568b7a4dc4b87376ee8e6f5c7bf393bd456040c5a0"
         ), 0, 2))
     assert(filteredOperationsWithLimit.size == 2)
     val filteredOperationsWithOffset = TwitterAwait.result(
       poolDao.findOperationsByUids(account, wallet,
         Seq(
-          "20b028fbccb1329be368c680a1e884139b1b07f9501726b9b911f60b5c6c855f",
-          "f802a15c2c5a654fa42ae65e46158f30feb8a07ecaf26ed2d64ed90da1fe7cf7",
-          "3479299812467aa58192e0bc0a54c085ab11db2f5172bdbc4b6273ea791e82d4"
+          "313b7bd7ae0eb9b2b45b1be568de5e4d6f045f9bf049263c90d9f97814c647fb",
+          "9c475196a18a6e0b8ccd1e472a218e4234ba5af2b6bfc0b8611beff6eac045ab",
+          "37ffcc3a2ad0051111c533568b7a4dc4b87376ee8e6f5c7bf393bd456040c5a0"
         ), 1, 10))
     assert(filteredOperationsWithOffset.size == 2)
     val opCounts = TwitterAwait.result(poolDao.countOperations(account, wallet))
@@ -108,21 +107,22 @@ class WalletPoolDAOTest extends AssertionsForJUnit with Logging {
     val filteredOperations = TwitterAwait.result(
       poolDao.findOperationsByUids(account, wallet,
         Seq(
-          "97da657e44222c6d64b6c69148a8218cda2fbc8bca793901277b400fc7b853d2",
-          "05471c7362d95dc1c1af68cb40c1e56f580ca71759c7811165b580dbef52bac9",
-          "6bb9334bd95c08b348d46f77ce7bbad271fa7a3490d47cb5e8259cf966b6dda7"
+          "ab641a57457e5f101fac21b5b1c400ae6e5b8c4c719f3c76f216a15f37436cc3",
+          "1d62e8909bdb2051efd824f776e658afbf194de7b3566c6716226227f48102f4",
+          "76d99345d2e2cdc7a1dc8ed63ff98aba1ccd4ffe8746cad2e66d2b5382e446cf"
         ), 0, 100))
     assert(filteredOperations.size == 3)
 
     // Expect 2 ERC20 operations
     val erc20OperationViews = allOperations.filter(_.transaction.exists(_.asInstanceOf[EthereumTransactionView].erc20.isDefined))
-    assert(erc20OperationViews.size == 2)
+    // https://etherscan.io/address/0xD7838451bc7258Da7a9213e2bCcCc02079463A42#tokentxns
+    assert(erc20OperationViews.size == 21)
 
-    val erc20OpUids = Seq("0cb747196f93c1f0f2503b0c2e5c484602d226b9b642b35c1f126e5aa9451c6d", "4b6a47c302787c5e514d56126572dc76c07d3385285295d3cda7348766067c77")
+    val erc20OpUids = Seq("d5ae76fa7d4d7e42f935e5bbbf3e4bb2b0940e9af14476d6a504509180c23642", "b04b9f3e7837dd33c04f7518276248d7a64ba0c3e3959ad990f0b26401d0761c")
     val erc20ByUids = TwitterAwait.result(poolDao.findERC20OperationsByUids(account, wallet, erc20OpUids, 0, Int.MaxValue))
 
     assert(erc20ByUids.size == 2)
-    assert(erc20ByUids.map(_.uid).toSet == erc20OperationViews.map(_.uid).toSet)
+    assert(erc20ByUids.map(_.uid).toSet.subsetOf(erc20OperationViews.map(_.uid).toSet))
   }
 
   @Test def testStellarWallet(): Unit = {

@@ -83,6 +83,10 @@ class AccountsService @Inject()(daemonCache: DaemonCache, synchronizerManager: A
     synchronizerManager.getSyncStatus(accountInfo)
   }
 
+  def ongoingSyncs(): Future[List[(AccountInfo, SyncStatus)]] = {
+    synchronizerManager.ongoingSyncs()
+  }
+
   /**
     * Method to synchronize account operations from public resources. The method may take a while
     * to finish. This method only synchronize a single account.
@@ -261,7 +265,7 @@ class AccountsService @Inject()(daemonCache: DaemonCache, synchronizerManager: A
       (w, p) =>
         w.addAccountIfNotExist(accountCreationBody).flatMap { a =>
           val accountInfo = AccountInfo(a.getIndex, walletInfo)
-          synchronizerManager.registerAccount(a, w, accountInfo)
+          synchronizerManager.registerAccount(w, a, accountInfo)
           accountView(p, walletInfo, w)(a).map(_.get)
         }
     }
@@ -271,7 +275,7 @@ class AccountsService @Inject()(daemonCache: DaemonCache, synchronizerManager: A
       (w, p) =>
         w.addAccountIfNotExist(derivations).flatMap { a =>
           val accountInfo = AccountInfo(a.getIndex, walletInfo)
-          synchronizerManager.registerAccount(a, w, accountInfo)
+          synchronizerManager.registerAccount(w, a, accountInfo)
           accountView(p, walletInfo, w)(a).map(_.get)
         }
     }
@@ -287,9 +291,11 @@ class AccountsService @Inject()(daemonCache: DaemonCache, synchronizerManager: A
             publisher.publishOperation(view, account, wallet, accountInfo.poolName)
           ))
         val pushErc20Future: Future[Unit] = if (account.isInstanceOfEthereumLikeAccount) {
-          account.erc20Operations(wallet).map(_.map(view =>
-            publisher.publishERC20Operation(view, account, wallet, accountInfo.poolName)
-          ))
+          daemonCache.withAccountAndWalletAndPool(accountInfo) { (account, wallet, pool) =>
+            account.erc20OperationsFromHeight(pool, wallet, account, offset = 0, batch = Int.MaxValue, fromHeight.getOrElse(0)).map(_.map(view =>
+              publisher.publishERC20Operation(view, account, wallet, accountInfo.poolName)
+            ))
+          }
         } else Future.unit
         pushOperationFuture.flatMap(_ => pushErc20Future)
     }

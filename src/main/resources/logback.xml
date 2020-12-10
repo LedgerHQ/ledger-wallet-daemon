@@ -33,18 +33,29 @@
         <appender-ref ref="STDOUT" />
     </appender>
 
-    <logger name="co.ledger.wallet.daemon.libledger_core" level="info" />
-    <logger name="co.ledger.wallet.daemon" level="info" />
-    <logger name="slick" level="warn" />
-    <logger name="io.netty" level="warn" />
-    <logger name="com.twitter" level="warn" />
-    <logger name="com.newmotion.akka.rabbitmq" level="debug" />
-    <logger name="com.twitter.finatra.http.filters.AccessLoggingFilter" level="info" />
-    <logger name="djinni" level="warn" />
-    <root level="info">
+    <variable name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}" />
+    <variable name="CORE_LOG_LEVEL" value="${CORE_LOG_LEVEL:-WARN}" />
+    <variable name="DAEMON_LOG_LEVEL" value="${DAEMON_LOG_LEVEL:-WARN}" />
+    <variable name="SLICK_LOG_LEVEL" value="${SLICK_LOG_LEVEL:-WARN}" />
+    <variable name="NETTY_LOG_LEVEL" value="${NETTY_LOG_LEVEL:-INFO}" />
+    <variable name="TWITTER_LOG_LEVEL" value="${TWITTER_LOG_LEVEL:-WARN}" />
+    <variable name="RABBITMQ_LOG_LEVEL" value="${RABBITMQ_LOG_LEVEL:-WARN}" />
+    <variable name="FINATRA_LOG_LEVEL" value="${FINATRA_LOG_LEVEL:-WARN}" />
+    <variable name="DJINNI_LOG_LEVEL" value="${DJINNI_LOG_LEVEL:-WARN}" />
+    <variable name="SYNCHRONIZER_LOG_LEVEL" value="${SYNCHRONIZER_LOG_LEVEL:-WARN}" />
+
+    <logger name="co.ledger.wallet.daemon.libledger_core" level="${CORE_LOG_LEVEL}" />
+    <logger name="co.ledger.wallet.daemon" level="${DAEMON_LOG_LEVEL}" />
+    <logger name="slick" level="${SLICK_LOG_LEVEL}" />
+    <logger name="io.netty" level="${NETTY_LOG_LEVEL}" />
+    <logger name="com.twitter" level="${TWITTER_LOG_LEVEL}" />
+    <logger name="com.newmotion.akka.rabbitmq" level="${RABBITMQ_LOG_LEVEL}" />
+    <logger name="com.twitter.finatra.http.filters.AccessLoggingFilter" level="${FINATRA_LOG_LEVEL}" />
+    <logger name="djinni" level="${DJINNI_LOG_LEVEL}" />
+    <root level="${LOG_LEVEL}">
         <appender-ref ref="ASYNC" />
     </root>
-    <logger name="co.ledger.wallet.daemon.services.AccountSynchronizer" level="debug" />
-    <logger name="co.ledger.wallet.daemon.services.AccountOperationsPublisher" level="debug" />
+    <logger name="co.ledger.wallet.daemon.services.AccountSynchronizer" level="${SYNCHRONIZER_LOG_LEVEL}" />
+    <logger name="co.ledger.wallet.daemon.services.AccountOperationsPublisher" level="${PUBLISHER_LOG_LEVEL}" />
 
 </configuration>

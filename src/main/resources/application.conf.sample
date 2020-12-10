@@ -11,6 +11,21 @@ sqlite3 = {
   connectionPool = disabled
 }
 
+user-preferences = {
+    storage=redis
+    storage=${?PREFERENCES_STORAGE}
+}
+
+redis = {
+    host = "localhost"
+    host = ${?REDIS_HOST}
+    port = 6379
+    port = ${?REDIS_PORT}
+    password = ${?REDIS_PASSWORD}
+    db = ${?REDIS_DB_NAME}
+    connection_timeout = ${?REDIS_CONNECTION_TIMEOUT}
+}
+
 core = {
   # Per pool resource allocations
   # It will allocate ops_threads_factor * number of available CPUs per walletpool
@@ -51,6 +66,10 @@ postgres = {
         # the PG instance should be able to handle up to 100 connexions at a time
         pool_size = 10
         pool_size = ${?CORE_PG_CONNECTION_POOL_SIZE_PER_WALLET_POOL}
+
+        # readonly_pool_size is the number of connections held by a readonly pool instance.
+        readonly_pool_size = 10
+        readonly_pool_size = ${?CORE_PG_READONLY_CONNECTION_POOL_SIZE_PER_WALLET_POOL}
     }
     wallet_daemon = {
         # Wallet Daemon database name
@@ -91,7 +110,7 @@ explorer = {
         currency = default
         host = "https://explorers.api.vault.ledger.com"
         port = 443
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_DEFAULT_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?DEFAULT_DISABLE_SYNC_TOKEN}
@@ -104,7 +123,7 @@ explorer = {
         port = ${?WALLET_BTC_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_BTC_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_BTC_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?BTC_DISABLE_SYNC_TOKEN}
@@ -119,7 +138,7 @@ explorer = {
         port = ${?WALLET_BTC_TESTNET_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_BTC_TESTNET_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_BTC_TESTNET_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?BTC_TESTNET_DISABLE_SYNC_TOKEN}
@@ -134,7 +153,7 @@ explorer = {
         port = ${?WALLET_ETH_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_ETH_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_ETH_EXPLORER_PROXYUSE}
         fallback = "https://mainnet.infura.io/v3/c0c3514370b2454d9e58a001876167af"
         fallback = ${?WALLET_ETH_EXPLORER_FALLBACK}
@@ -151,7 +170,7 @@ explorer = {
         port = ${?WALLET_ETC_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_ETC_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_ETC_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?ETC_DISABLE_SYNC_TOKEN}
@@ -166,7 +185,7 @@ explorer = {
         port = ${?WALLET_ETH_ROPSTEN_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_ETH_ROPSTEN_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_ETH_ROPSTEN_EXPLORER_PROXYUSE}
         fallback = "https://ropsten.infura.io/v3/c0c3514370b2454d9e58a001876167af"
         fallback = ${?WALLET_ETH_ROPSTEN_EXPLORER_FALLBACK}
@@ -183,7 +202,7 @@ explorer = {
         port = ${?WALLET_DOGE_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_DOGE_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_DOGE_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?DOGE_DISABLE_SYNC_TOKEN}
@@ -198,7 +217,7 @@ explorer = {
         port = ${?WALLET_LTC_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_LTC_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_LTC_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?LTC_DISABLE_SYNC_TOKEN}
@@ -211,7 +230,7 @@ explorer = {
         host = ${?WALLET_XRP_EXPLORER_ENDPOINT}
         port = 51234
         port = ${?WALLET_XRP_EXPLORER_PORT}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_XRP_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?XRP_DISABLE_SYNC_TOKEN}
@@ -233,7 +252,7 @@ explorer = {
         port = ${?WALLET_DASH_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_DASH_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_DASH_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?DASH_DISABLE_SYNC_TOKEN}
@@ -248,7 +267,7 @@ explorer = {
         port = ${?WALLET_KOMODO_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_KOMODO_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_KOMODO_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?KOMODO_DISABLE_SYNC_TOKEN}
@@ -263,7 +282,7 @@ explorer = {
         port = ${?WALLET_PIVX_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_PIVX_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_PIVX_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?PIVX_DISABLE_SYNC_TOKEN}
@@ -278,7 +297,7 @@ explorer = {
         port = ${?WALLET_VIA_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_VIA_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_VIA_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?VIA_DISABLE_SYNC_TOKEN}
@@ -293,7 +312,7 @@ explorer = {
         port = ${?WALLET_VTC_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_VTC_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_VTC_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?VTC_DISABLE_SYNC_TOKEN}
@@ -308,7 +327,7 @@ explorer = {
         port = ${?WALLET_DGB_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_DGB_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_DGB_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?DGB_DISABLE_SYNC_TOKEN}
@@ -323,7 +342,7 @@ explorer = {
         port = ${?WALLET_ABC_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_ABC_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_ABC_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?ABC_DISABLE_SYNC_TOKEN}
@@ -338,7 +357,7 @@ explorer = {
         port = ${?WALLET_POSW_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_POSW_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_POSW_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?POSW_DISABLE_SYNC_TOKEN}
@@ -353,7 +372,7 @@ explorer = {
         port = ${?WALLET_STRAT_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_STRAT_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_STRAT_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?STRAT_DISABLE_SYNC_TOKEN}
@@ -368,7 +387,7 @@ explorer = {
         port = ${?WALLET_PPC_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_PPC_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_PPC_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?PPC_DISABLE_SYNC_TOKEN}
@@ -383,7 +402,7 @@ explorer = {
         port = ${?WALLET_BTG_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_BTG_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_BTG_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?BTG_DISABLE_SYNC_TOKEN}
@@ -398,7 +417,7 @@ explorer = {
         port = ${?WALLET_ZEC_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_ZEC_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_ZEC_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?ZEC_DISABLE_SYNC_TOKEN}
@@ -413,7 +432,7 @@ explorer = {
         port = ${?WALLET_QTUM_EXPLORER_PORT}
         explorer_version = "v3"
         explorer_version = ${?WALLET_QTUM_EXPLORER_VERSION}
-        proxyuse = true
+        proxyuse = false
         proxyuse = ${?WALLET_QTUM_EXPLORER_PROXYUSE}
         disable_sync_token = true
         disable_sync_token = ${?QTUM_DISABLE_SYNC_TOKEN}
@@ -490,6 +509,14 @@ synchronization = {
   # delay between two synchronization
   sync_interval_in_seconds = 60
   sync_interval_in_seconds = ${?SYNC_INTERVAL_IN_SECONDS}
+
+  # max number of on going synchronizations
+  max_sync_ongoing = 4
+  max_sync_ongoing = ${?SYNC_ON_GOING_MAX}
+}
+
+account-synchronizer-mailbox {
+    mailbox-type = "co.ledger.wallet.daemon.services.AccountSynchronizerMailbox"
 }
 
 # AKKA specifics
@@ -503,7 +530,7 @@ akka {
       throughput = 1
     }
     loggers = ["akka.event.slf4j.Slf4jLogger"]
-    loglevel = "DEBUG"
+    loglevel = "INFO"
     logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
     actor.debug.receive = on
 }

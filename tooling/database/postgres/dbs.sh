@@ -24,7 +24,7 @@ $command -h $host -p $port wallet_daemon -U $user
 echo "     |--> wallet_daemon Done"
 
 # Databases used in IT tests
-tests=(walletpooldao databasedaotest account_test preferenceBackendTest transactionsExcludeUTXOTest transactionsPartialTest currency_pool test_pool test_pool1 op_pool op_pool_mal info_pool exist_pool fresh_addresses_pool list_pool account_pool delete_pool create_delete_pool delete_account balance_pool pool_1 pool_2 pool_3 random_pool multi_pool_mal transactionsCreation4Test ledger anotha_pool same_pool this_pool my_pool your_pool wallet_pool duplicate_pool empty_pool multi_pool random POOL_NAME myPool test_wallet getUtxo_pool tez_test_pool)
+tests=(default_test_pool create_delete_pool walletpooldao databasedaotest account_test pool_a pool_b pool_c empty_pool walletpool_test account_api_test_pool tez_test_pool)
 
 # Create all DBs with names above
 for elem in "${tests[@]}"

@@ -46,9 +46,9 @@ class RabbitMQPublisher(poolPublisher: ActorSelection) extends Logging with Publ
     }
   }
 
-  override def publishERC20Account(erc20Account: ERC20LikeAccount, account: Account, wallet: Wallet, syncStatus: SyncStatus, poolName: String): Future[Unit] = {
-    erc20AccountPayload(erc20Account: ERC20LikeAccount, account: Account, wallet: Wallet, syncStatus: SyncStatus).map {
-      payload => publish(poolName, getAccountRoutingKeys(account, wallet, poolName) ++ List("erc20"), payload)
+  override def publishERC20Account(pool: Pool, erc20Account: ERC20LikeAccount, account: Account, wallet: Wallet, syncStatus: SyncStatus): Future[Unit] = {
+    erc20AccountPayload(pool: Pool, erc20Account: ERC20LikeAccount, account: Account, wallet: Wallet, syncStatus: SyncStatus).map {
+      payload => publish(pool.name, getAccountRoutingKeys(account, wallet, pool.name) ++ List("erc20"), payload)
     }
   }
 
@@ -81,15 +81,16 @@ class RabbitMQPublisher(poolPublisher: ActorSelection) extends Logging with Publ
   }
 
   private def accountPayload(pool: Pool, account: Account, wallet: Wallet, syncStatus: SyncStatus): Future[Array[Byte]] = {
-    account.accountView(pool, wallet, wallet.getCurrency.currencyView, syncStatus).map {
-      mapper.writeValueAsBytes(_)
-    }
+    account.accountView(pool, wallet, wallet.getCurrency.currencyView, syncStatus)
+      .map(AccountRabbitMQView.fromAccountView)
+      .map(mapper.writeValueAsBytes)
   }
 
-  private def erc20AccountPayload(erc20Account: ERC20LikeAccount, account: Account, wallet: Wallet, syncStatus: SyncStatus): Future[Array[Byte]] = {
-    account.erc20AccountView(erc20Account, wallet, syncStatus).map {
-      mapper.writeValueAsBytes(_)
-    }
+  private def erc20AccountPayload(pool: Pool, erc20Account: ERC20LikeAccount, account: Account, wallet: Wallet, syncStatus: SyncStatus): Future[Array[Byte]] = {
+    for {
+      accountView <- account.accountView(pool, wallet, wallet.getCurrency.currencyView, syncStatus)
+      erc20AccountView <- account.erc20AccountView(erc20Account, wallet, syncStatus)
+    } yield mapper.writeValueAsBytes(ERC20AccountRabbitMQView.fromAccountViews(accountView, erc20AccountView))
   }
 
   private def getAccountRoutingKeys(account: Account, wallet: Wallet, poolName: String): List[String] = {

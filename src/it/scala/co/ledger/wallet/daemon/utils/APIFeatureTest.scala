@@ -1,14 +1,35 @@
 package co.ledger.wallet.daemon.utils
 
 import co.ledger.wallet.daemon.ServerImpl
-import co.ledger.wallet.daemon.services.OperationQueryParams
+import co.ledger.wallet.daemon.services._
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.databind.{DeserializationContext, JsonDeserializer, JsonNode}
 import com.twitter.finagle.http.{Response, Status}
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.twitter.inject.server.FeatureTest
 
+import java.io.IOException
+
 trait APIFeatureTest extends FeatureTest {
   val serverImpl = new ServerImpl
   override val server = new EmbeddedHttpServer(serverImpl)
+
+  class AccountStatusDeserializer extends JsonDeserializer[SyncStatus] {
+    override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SyncStatus = {
+      val jTree: JsonNode = jp.getCodec.readTree[JsonNode](jp)
+      jTree.get("value").asText match {
+        case "synced" => Synced(atHeight = jTree.get("at_height").asLong)
+        case "syncing" => Syncing(fromHeight = jTree.get("from_height").asLong, currentHeight = jTree.get("current_height").asLong)
+        case "failed" => FailedToSync(reason = jTree.get("reason").asText)
+        case _ => throw new IOException(s"Failed to deserialize $jTree")
+      }
+    }
+  }
+
+  val module: SimpleModule = new SimpleModule
+  module.addDeserializer(classOf[SyncStatus], new AccountStatusDeserializer)
+  server.mapper.registerModule(module)
 
   def parse[A](response: Response)(implicit manifest: Manifest[A]): A = server.mapper.parse[A](response)
 
@@ -44,8 +65,8 @@ trait APIFeatureTest extends FeatureTest {
     server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$account/addresses?from=$from&to=$to", andExpect = expected)
   }
 
-  def deletePool(poolName: String): Response = {
-    server.httpDelete(s"/pools/$poolName", "", andExpect = Status.Ok)
+  def deletePool(poolName: String, expected: Status = Status.Ok): Response = {
+    server.httpDelete(s"/pools/$poolName", "", andExpect = expected)
   }
 
   def deletePoolIfExists(poolName: String): Response = {
@@ -126,7 +147,6 @@ trait APIFeatureTest extends FeatureTest {
 
   protected def assertGetUTXO(poolName: String, walletName: String, index: Int, expected: Status): Response = {
     server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/utxo", andExpect = expected)
-    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/utxo?offset=2&batch=10", andExpect = expected)
   }
 
   protected def assertSignTransaction(tx: String, poolName: String, walletName: String, accountIndex: Int, expected: Status): Response = {
@@ -146,10 +166,13 @@ trait APIFeatureTest extends FeatureTest {
 
   protected def awaitSync(poolName: String, walletName: String, accIdx: Int) = {
 
-    def isSynced = server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$accIdx/sync-status", "", andExpect = Status.Ok)
-      .contentString.contains("synced")
+    def isSynced = {
+      val syncStatus = parse[SyncStatus](server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$accIdx/sync-status", "", andExpect = Status.Ok))
+      logger.info(s"Waiting for account $poolName-$walletName-$accIdx to be synced : $syncStatus")
+      syncStatus.value == "synced" && syncStatus.asInstanceOf[Synced].atHeight > 0L
+    }
 
-    var attempt = 240
+    var attempt = 2400
     while (!isSynced && attempt > 0) {
       attempt -= 1
       Thread.sleep(500)

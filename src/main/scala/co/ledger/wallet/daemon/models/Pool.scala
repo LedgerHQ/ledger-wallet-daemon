@@ -5,12 +5,12 @@ import java.time.LocalDateTime
 
 import co.ledger.core
 import co.ledger.core.implicits._
-import co.ledger.core.{ConfigurationDefaults, ErrorCode}
+import co.ledger.core.{ConfigurationDefaults, ErrorCode, WalletPoolBuilder}
 import co.ledger.wallet.daemon.clients.ClientFactory
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
 import co.ledger.wallet.daemon.context.ApplicationContext.IOPool
 import co.ledger.wallet.daemon.database.core.WalletPoolDao
-import co.ledger.wallet.daemon.database.{PoolDto, PostgresPreferenceBackend}
+import co.ledger.wallet.daemon.database.{PoolDto, RedisClientConfiguration, RedisPreferenceBackend}
 import co.ledger.wallet.daemon.exceptions.{CoreDatabaseException, CurrencyNotFoundException, UnsupportedNativeSegwitException, WalletNotFoundException}
 import co.ledger.wallet.daemon.libledger_core.async.LedgerCoreExecutionContext
 import co.ledger.wallet.daemon.libledger_core.crypto.SecureRandomRNG
@@ -23,9 +23,6 @@ import com.google.common.cache.{CacheLoader, LoadingCache}
 import com.twitter.inject.Logging
 import com.typesafe.config.ConfigFactory
 import org.bitcoinj.core.Sha256Hash
-import slick.jdbc.DriverDataSource
-import slick.jdbc.JdbcBackend.Database
-import slick.util.AsyncExecutor
 
 import scala.collection.JavaConverters._
 import scala.collection._
@@ -41,7 +38,7 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
 
   val sessionStartDate: LocalDateTime = LocalDateTime.now()
   val name: String = coreP.getName
-  logger.info(s"New Core Pool instance - ${coreP.getName} - id $id")
+  logger.info(s"New Core Pool instance - $name - id $id")
   val walletPoolDao: WalletPoolDao = WalletPoolDao(name)
 
   def view: Future[WalletPoolView] = coreP.getWalletCount().map { count => WalletPoolView(name, count) }
@@ -290,10 +287,15 @@ object Pool extends Logging {
     )(id => Some(poolInstances.get(CacheKey(id, poolDto.name))))
   }
 
-
   private def newCoreWalletPool(poolName: String): Future[core.WalletPool] = {
     val poolConfig = core.DynamicObject.newInstance()
     val builder = core.WalletPoolBuilder.createInstance()
+
+    config.getString("user-preferences.storage") match {
+      case "redis" => configureRedisAsPreferenceStorage(poolName, builder)
+      case "leveldb" => info("Using LevelDB as core preference database")
+      case unknown: String => throw CoreDatabaseException(s"Failed to configure wallet daemon's core user-preferences database, unknown value ${unknown}")
+    }
 
     Try(config.getString("core.core_database_engine")).toOption.getOrElse("sqlite3") match {
       case "postgres" =>
@@ -307,24 +309,17 @@ object Pool extends Logging {
         } yield {
           // Ref: postgres://USERNAME:PASSWORD@HOST:PORT/DBNAME
           if (dbPwd.isEmpty) {
-            (s"postgres://${dbUserName}@${dbHost}:${dbPort}/${dbPrefix}${poolName}",
-              s"jdbc:postgresql://$dbHost:$dbPort/$dbPrefix${poolName}?user=$dbUserName")
+            (s"postgres://${dbUserName}@${dbHost}:${dbPort}/${dbPrefix}${poolName}")
           } else {
-            (s"postgres://${dbUserName}:${dbPwd}@${dbHost}:${dbPort}/${dbPrefix}${poolName}",
-              s"jdbc:postgresql://$dbHost:$dbPort/$dbPrefix${poolName}?user=$dbUserName&password=$dbPwd")
+            (s"postgres://${dbUserName}:${dbPwd}@${dbHost}:${dbPort}/${dbPrefix}${poolName}")
           }
         }
         dbName match {
-          case Success((cppUrl, jdbcUrl)) =>
+          case Success(cppUrl) =>
             val cnx = config.getInt("postgres.core.pool_size")
-            info(s"Using PostgreSQL as core preference database $jdbcUrl with connexions : $cnx")
-            val preferenceBackend = new PostgresPreferenceBackend(
-              Database.forDataSource(new DriverDataSource(jdbcUrl), Some(cnx), AsyncExecutor("walletdaemon-pref-db", cnx, -1)))
-            preferenceBackend.init()
-            builder.setExternalPreferencesBackend(preferenceBackend)
-            builder.setInternalPreferencesBackend(preferenceBackend)
+            val readonlyCnx = config.getInt("postgres.core.readonly_pool_size")
             poolConfig.putString("DATABASE_NAME", cppUrl)
-            val backend = core.DatabaseBackend.getPostgreSQLBackend(cnx)
+            val backend = core.DatabaseBackend.getPostgreSQLBackend(cnx, readonlyCnx)
             builder.setDatabaseBackend(backend)
           case Failure(exception) =>
             throw CoreDatabaseException("Failed to configure wallet daemon's core database", exception)
@@ -346,6 +341,33 @@ object Pool extends Logging {
   }
 
   private def corePoolId(poolName: String): String = HexUtils.valueOf(Sha256Hash.hash(s"$poolName".getBytes))
+
+  private def configureRedisAsPreferenceStorage(poolName: String, builder: WalletPoolBuilder) = {
+    val maybeRedisConf = for {
+      host <- Try(config.getString("redis.host"))
+      port <- Try(config.getInt("redis.port"))
+    } yield {
+      RedisClientConfiguration(
+        poolName = poolName,
+        host = host,
+        port = port,
+        password = Try(config.getString("redis.password")).toOption,
+        db = Try(config.getInt("redis.db")).toOption,
+        connectionTimeout = Try(config.getInt("redis.connection_timeout")).toOption
+      )
+    }
+
+    maybeRedisConf match {
+      case Success(redisConfig) =>
+        info(s"Using Redis as core preference database ${redisConfig.copy(password = Some("***"))}")
+        val preferenceBackend = new RedisPreferenceBackend(redisConfig)
+        preferenceBackend.init()
+        builder.setExternalPreferencesBackend(preferenceBackend)
+        builder.setInternalPreferencesBackend(preferenceBackend)
+      case Failure(exception) =>
+        throw CoreDatabaseException("Failed to configure wallet daemon's core user-preferences database", exception)
+    }
+  }
 }
 
 case class WalletPoolView(

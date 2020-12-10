@@ -120,6 +120,8 @@ class DaemonExceptionMapper @Inject()(response: ResponseBuilder)
           daemonExceptionInfo(e) + ("sync_status_target" -> targetHeight, "sync_status_current" -> currentHeight),
           response
         )
+      case e: InvalidErc20OperationsListException =>
+        ResponseSerializer.serializeInternalError(request, response, e)
     }
   }
 }

@@ -21,9 +21,11 @@ import co.ledger.wallet.daemon.utils.Utils.{RichBigInt, RichCoreBigInt, _}
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.common.primitives.UnsignedInteger
 import com.twitter.inject.Logging
+
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.math.BigDecimal
+import scala.math.BigDecimal.int2bigDecimal
 
 object Account extends Logging {
   implicit class RichCoreAccount(val a: core.Account) extends AnyVal {
@@ -492,7 +494,8 @@ object Account extends Logging {
     val feeMethod = ti.feesSpeedLevel.getOrElse(FeeMethod.SLOW)
 
     // Various transaction types : transaction / wipe to address / delegate / undelegate
-    if (!(ti.recipient.isEmpty && ti.operationType == TezosOperationTag.OPERATION_TAG_DELEGATION)) {
+    val isUndelegate = ti.recipient.isEmpty && ti.operationType == TezosOperationTag.OPERATION_TAG_DELEGATION
+    if (!isUndelegate) {
       if (ti.wipeToAddress) {
         builder.wipeToAddress(ti.recipient)
       } else {
@@ -502,35 +505,33 @@ object Account extends Logging {
     }
 
     for {
-      // TODO set the correct fees value
-      baseFee <- ti.fees match {
-        case Some(fee) => Future.successful(fee)
-        case None => tezosAccount.getFees() map { res =>
-            // make sure the fees are within reasonable bounds ( in [2500 ; 30000] )
-            val boundedFees = res.asScala.max(scala.math.BigInt(2500)).min(scala.math.BigInt(30000))
-            XtzFeeInfo(boundedFees).getAmount(feeMethod)
+      defaultFees <- ti.operationType match {
+        case TezosOperationTag.OPERATION_TAG_TRANSACTION => Future.successful(0.toBigInt)
+        case _ => tezosAccount.getFees() map { res =>
+          // make sure the fees are within reasonable bounds ( in [2500 ; 30000] )
+          val boundedFees = res.asScala.max(scala.math.BigInt(2500)).min(scala.math.BigInt(30000))
+          XtzFeeInfo(boundedFees).getAmount(feeMethod)
         }
       }
-      _ = builder.setFees(currency.convertAmount(baseFee))
-
-      gasLimit <- ti.gasLimit match {
-        case Some(amount) => Future.successful(amount.asCoreBigInt)
-        case None => tezosAccount.getEstimatedGasLimit(ti.recipient)
+      defaultGasLimit <- ti.operationType match {
+        case TezosOperationTag.OPERATION_TAG_TRANSACTION => Future.successful(0.toBigInt)
+        case _ => tezosAccount.getEstimatedGasLimit(ti.recipient).map(_.asScala)
       }
       storageLimit <- ti.storageLimit match {
         case Some(amount) => Future.successful(amount)
         case None => Future.successful(scala.math.BigInt(257))
       }
-      // TODO: Sequence number ? How to handle this with concurrent transactions ?
-      _ = builder.setGasLimit(currency.convertAmount(gasLimit.asScala))
+
+      _ = builder.setFees(currency.convertAmount(ti.fees.getOrElse(defaultFees)))
+      _ = builder.setGasLimit(currency.convertAmount(ti.gasLimit.getOrElse(defaultGasLimit)))
       _ = builder.setStorageLimit(storageLimit.asCoreBigInt)
 
       _ = builder.setType(ti.operationType)
       // build and parse as unsigned tx view
       // libcore is responsible for creating/injecting the reveal operation if necessary
-      // FIXME so what happens when there are multiple operations in the builder's result ?
-      view <- builder.build().map(tx => UnsignedTezosTransactionView(tx))
-    } yield view
+      // libcore also sets fees/gasLimit if values were not set
+      tx <- builder.build()
+    } yield UnsignedTezosTransactionView(tx, feeMethod)
   }
 
   def createTransaction(transactionInfo: TransactionInfo, a: core.Account, w: core.Wallet)(implicit ec: ExecutionContext): Future[TransactionView] = {

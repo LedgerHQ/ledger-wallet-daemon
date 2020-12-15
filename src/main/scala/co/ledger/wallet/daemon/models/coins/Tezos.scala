@@ -3,6 +3,8 @@ package co.ledger.wallet.daemon.models.coins
 import java.util.Date
 
 import co.ledger.core
+import co.ledger.wallet.daemon.clients.ApiClient.XtzFeeInfo
+import co.ledger.wallet.daemon.models.{Currency, FeeMethod}
 import co.ledger.wallet.daemon.models.coins.Coin._
 import co.ledger.wallet.daemon.utils.HexUtils
 import co.ledger.wallet.daemon.utils.Utils.RichBigInt
@@ -129,6 +131,26 @@ case class UnsignedTezosTransactionView(
                             @JsonProperty("raw_transaction") rawTransaction: String) extends TransactionView
 
 object UnsignedTezosTransactionView {
+  def apply(tx: core.TezosLikeTransaction, feeMethod: FeeMethod): UnsignedTezosTransactionView = {
+    UnsignedTezosTransactionView(
+      tx.getType,
+      tx.getHash,
+      Option(tx.getFees).map(fees => Currency.convertAmount(fees.getCurrency)(XtzFeeInfo(fees.toBigInt.asScala).getAmount(feeMethod)))
+        .map(fees => fees.toString),
+      Option(tx.getReceiver).map(recv => recv.toBase58),
+      tx.getSender.toBase58,
+      Option(tx.getValue).map(_.toString),
+      tx.getDate,
+      HexUtils.valueOf(tx.getSigningPubKey),
+      Try(tx.getCounter).toOption.map(counter => counter.asScala),
+      Option(tx.getGasLimit).map(limit => limit.toBigInt.asScala),
+      Try(tx.getStorageLimit).toOption.map(limit => limit.asScala),
+      tx.getBlockHash,
+      tx.getStatus,
+      HexUtils.valueOf(tx.serialize())
+    )
+  }
+
   def apply(tx: core.TezosLikeTransaction): UnsignedTezosTransactionView = {
     UnsignedTezosTransactionView(
       tx.getType,

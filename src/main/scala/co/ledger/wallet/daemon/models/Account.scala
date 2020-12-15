@@ -4,7 +4,7 @@ import cats.implicits._
 import co.ledger.core
 import co.ledger.core._
 import co.ledger.core.implicits.{InvalidEIP55FormatException, NotEnoughFundsException, UnsupportedOperationException, _}
-import co.ledger.wallet.daemon.clients.ApiClient.{XlmFeeInfo, XtzFeeInfo}
+import co.ledger.wallet.daemon.clients.ApiClient.XlmFeeInfo
 import co.ledger.wallet.daemon.clients.ClientFactory
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
 import co.ledger.wallet.daemon.controllers.TransactionsController._
@@ -491,7 +491,6 @@ object Account extends Logging {
     val tezosAccount = a.asTezosLikeAccount()
     val builder = tezosAccount.buildTransaction()
     val currency = w.getCurrency
-    val feeMethod = ti.feesSpeedLevel.getOrElse(FeeMethod.SLOW)
 
     // Various transaction types : transaction / wipe to address / delegate / undelegate
     val isUndelegate = ti.recipient.isEmpty && ti.operationType == TezosOperationTag.OPERATION_TAG_DELEGATION
@@ -508,9 +507,8 @@ object Account extends Logging {
       defaultFees <- ti.operationType match {
         case TezosOperationTag.OPERATION_TAG_TRANSACTION => Future.successful(0.toBigInt)
         case _ => tezosAccount.getFees() map { res =>
-          // make sure the fees are within reasonable bounds ( in [2500 ; 30000] )
-          val boundedFees = res.asScala.max(scala.math.BigInt(2500)).min(scala.math.BigInt(30000))
-          XtzFeeInfo(boundedFees).getAmount(feeMethod)
+          // make sure tfeeMethodhe fees are within reasonable bounds ( in [2500 ; 30000] )
+          res.asScala.max(scala.math.BigInt(2500)).min(scala.math.BigInt(30000))
         }
       }
       defaultGasLimit <- ti.operationType match {
@@ -531,7 +529,7 @@ object Account extends Logging {
       // libcore is responsible for creating/injecting the reveal operation if necessary
       // libcore also sets fees/gasLimit if values were not set
       tx <- builder.build()
-    } yield UnsignedTezosTransactionView(tx, feeMethod)
+    } yield UnsignedTezosTransactionView(tx)
   }
 
   def createTransaction(transactionInfo: TransactionInfo, a: core.Account, w: core.Wallet)(implicit ec: ExecutionContext): Future[TransactionView] = {

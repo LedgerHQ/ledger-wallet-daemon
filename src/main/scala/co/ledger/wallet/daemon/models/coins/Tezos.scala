@@ -4,8 +4,8 @@ import java.util.Date
 
 import co.ledger.core
 import co.ledger.wallet.daemon.clients.ApiClient.XtzFeeInfo
-import co.ledger.wallet.daemon.models.{Currency, FeeMethod}
 import co.ledger.wallet.daemon.models.coins.Coin._
+import co.ledger.wallet.daemon.models.{Currency, FeeMethod}
 import co.ledger.wallet.daemon.utils.HexUtils
 import co.ledger.wallet.daemon.utils.Utils.RichBigInt
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -45,21 +45,17 @@ object Tezos {
       from.getStatus
     )
   }
-
-  // private def newBlockView(from: core.TezosLikeBlock): BlockView = {
-  //   CommonBlockView(from.getHash, from.getHeight, from.getTime)
-  // }
 }
 
 case class TezosNetworkParamsView(
-                                     @JsonProperty("identifier") identifier: String,
-                                     @JsonProperty("message_prefix") messagePrefix: String,
-                                     @JsonProperty("xpub_version") xpubVersion: String,
-                                     @JsonProperty("implicit_prefix") implicitPrefix: String,
-                                     @JsonProperty("originated_prefix") originatedPrefix: String,
-                                     @JsonProperty("additional_tips") additionalTips: List[String],
-                                     @JsonProperty("timestamp_delay") timestampDelay: BigInt
-                                   ) extends NetworkParamsView
+                                   @JsonProperty("identifier") identifier: String,
+                                   @JsonProperty("message_prefix") messagePrefix: String,
+                                   @JsonProperty("xpub_version") xpubVersion: String,
+                                   @JsonProperty("implicit_prefix") implicitPrefix: String,
+                                   @JsonProperty("originated_prefix") originatedPrefix: String,
+                                   @JsonProperty("additional_tips") additionalTips: List[String],
+                                   @JsonProperty("timestamp_delay") timestampDelay: BigInt
+                                 ) extends NetworkParamsView
 
 object TezosNetworkParamsView {
   def apply(n: core.TezosLikeNetworkParameters): TezosNetworkParamsView =
@@ -75,20 +71,20 @@ object TezosNetworkParamsView {
 }
 
 case class TezosTransactionView(
-                                   @JsonProperty("type") operationType: core.TezosOperationTag,
-                                   @JsonProperty("hash") hash: String,
-                                   @JsonProperty("fees") fees: Option[String],
-                                   @JsonProperty("receiver") receiver: Option[String],
-                                   @JsonProperty("sender") sender: String,
-                                   @JsonProperty("value") value: String,
-                                   @JsonProperty("date") date: Date,
-                                   @JsonProperty("signing_pubkey") signing_pubkey: String,
-                                   @JsonProperty("counter") counter: Option[BigInt],
-                                   @JsonProperty("gas_limit") gasLimit: Option[BigInt],
-                                   @JsonProperty("storage_limit") storageLimit: Option[BigInt],
-                                   @JsonProperty("block_hash") blockHash: String,
-                                   @JsonProperty("status") status: Int
-                                 ) extends TransactionView
+                                 @JsonProperty("type") operationType: core.TezosOperationTag,
+                                 @JsonProperty("hash") hash: String,
+                                 @JsonProperty("fees") fees: Option[String],
+                                 @JsonProperty("receiver") receiver: Option[String],
+                                 @JsonProperty("sender") sender: String,
+                                 @JsonProperty("value") value: String,
+                                 @JsonProperty("date") date: Date,
+                                 @JsonProperty("signing_pubkey") signing_pubkey: String,
+                                 @JsonProperty("counter") counter: Option[BigInt],
+                                 @JsonProperty("gas_limit") gasLimit: Option[BigInt],
+                                 @JsonProperty("storage_limit") storageLimit: Option[BigInt],
+                                 @JsonProperty("block_hash") blockHash: String,
+                                 @JsonProperty("status") status: Int
+                               ) extends TransactionView
 
 object TezosTransactionView {
   def apply(tx: core.TezosLikeTransaction): TezosTransactionView = {
@@ -115,20 +111,20 @@ object TezosTransactionView {
 }
 
 case class UnsignedTezosTransactionView(
-                                   @JsonProperty("type") operationType: core.TezosOperationTag,
-                                   @JsonProperty("hash") hash: String,
-                                   @JsonProperty("fees") fees: Option[String],
-                                   @JsonProperty("receiver") receiver: Option[String],
-                                   @JsonProperty("sender") sender: String,
-                                   @JsonProperty("value") value: Option[String],
-                                   @JsonProperty("date") date: Date,
-                                   @JsonProperty("signing_pubkey") signing_pubkey: String,
-                                   @JsonProperty("counter") counter: Option[BigInt],
-                                   @JsonProperty("gas_limit") gasLimit: Option[BigInt],
-                                   @JsonProperty("storage_limit") storageLimit: Option[BigInt],
-                                   @JsonProperty("block_hash") blockHash: String,
-                                   @JsonProperty("status") status: Int,
-                            @JsonProperty("raw_transaction") rawTransaction: String) extends TransactionView
+                                         @JsonProperty("type") operationType: core.TezosOperationTag,
+                                         @JsonProperty("hash") hash: String,
+                                         @JsonProperty("fees") fees: Option[String],
+                                         @JsonProperty("receiver") receiver: Option[String],
+                                         @JsonProperty("sender") sender: String,
+                                         @JsonProperty("value") value: Option[String],
+                                         @JsonProperty("date") date: Date,
+                                         @JsonProperty("signing_pubkey") signing_pubkey: String,
+                                         @JsonProperty("counter") counter: Option[BigInt],
+                                         @JsonProperty("gas_limit") gasLimit: Option[BigInt],
+                                         @JsonProperty("storage_limit") storageLimit: Option[BigInt],
+                                         @JsonProperty("block_hash") blockHash: String,
+                                         @JsonProperty("status") status: Int,
+                                         @JsonProperty("raw_transaction") rawTransaction: String) extends TransactionView
 
 object UnsignedTezosTransactionView {
   def apply(tx: core.TezosLikeTransaction, feeMethod: FeeMethod): UnsignedTezosTransactionView = {

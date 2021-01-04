@@ -189,11 +189,11 @@ object ApiClient {
     }
   }
 
-  case class XtzFeeInfo(minimumFee: BigInt) extends FeeInfo {
+  case class XtzFeeInfo(fee: BigInt) extends FeeInfo {
     def getAmount(feeMethod: FeeMethod): BigInt = feeMethod match {
-      case FeeMethod.SLOW => minimumFee
-      case FeeMethod.NORMAL => minimumFee * 2
-      case FeeMethod.FAST => minimumFee * 10
+      case FeeMethod.SLOW => fee - (fee * 25) / 100
+      case FeeMethod.NORMAL => fee
+      case FeeMethod.FAST => fee + (fee * 25) / 100
     }
   }
 }

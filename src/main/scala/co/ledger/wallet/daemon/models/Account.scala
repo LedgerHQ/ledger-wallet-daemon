@@ -28,6 +28,7 @@ import scala.math.BigDecimal
 import scala.math.BigDecimal.int2bigDecimal
 
 object Account extends Logging {
+
   implicit class RichCoreAccount(val a: core.Account) extends AnyVal {
     def erc20Balance(contract: String)(implicit ec: ExecutionContext): Future[scala.BigInt] = {
       Account.erc20Balance(contract, a)
@@ -504,24 +505,30 @@ object Account extends Logging {
     }
 
     for {
-      defaultFees <- ti.operationType match {
-        case TezosOperationTag.OPERATION_TAG_TRANSACTION => Future.successful(0.toBigInt)
-        case _ => tezosAccount.getFees() map { res =>
-          // make sure tfeeMethodhe fees are within reasonable bounds ( in [2500 ; 30000] )
-          res.asScala.max(scala.math.BigInt(2500)).min(scala.math.BigInt(30000))
+      fees <- ti.fees.map(Future.successful).getOrElse(
+        // TODO: Should be lazily evaluated instead
+        ti.operationType match {
+          case TezosOperationTag.OPERATION_TAG_TRANSACTION if ti.fees.isEmpty => Future.successful(0.toBigInt)
+          case _ => tezosAccount.getFees() map { res =>
+            // make sure tfeeMethodhe fees are within reasonable bounds ( in [2500 ; 30000] )
+            res.asScala.max(scala.math.BigInt(2500)).min(scala.math.BigInt(30000))
+          }
         }
-      }
-      defaultGasLimit <- ti.operationType match {
-        case TezosOperationTag.OPERATION_TAG_TRANSACTION => Future.successful(0.toBigInt)
-        case _ => tezosAccount.getEstimatedGasLimit(ti.recipient).map(_.asScala)
-      }
+      )
+      gasLimit <- ti.gasLimit.map(Future.successful).getOrElse(
+        // TODO: Should be lazily evaluated instead
+        ti.operationType match {
+          case TezosOperationTag.OPERATION_TAG_TRANSACTION => Future.successful(0.toBigInt)
+          case _ => tezosAccount.getEstimatedGasLimit(ti.recipient).map(_.asScala)
+        }
+      )
       storageLimit <- ti.storageLimit match {
         case Some(amount) => Future.successful(amount)
         case None => Future.successful(scala.math.BigInt(257))
       }
 
-      _ = builder.setFees(currency.convertAmount(ti.fees.getOrElse(defaultFees)))
-      _ = builder.setGasLimit(currency.convertAmount(ti.gasLimit.getOrElse(defaultGasLimit)))
+      _ = builder.setFees(currency.convertAmount(fees))
+      _ = builder.setGasLimit(currency.convertAmount(gasLimit))
       _ = builder.setStorageLimit(storageLimit.asCoreBigInt)
 
       _ = builder.setType(ti.operationType)
@@ -529,7 +536,11 @@ object Account extends Logging {
       // libcore is responsible for creating/injecting the reveal operation if necessary
       // libcore also sets fees/gasLimit if values were not set
       tx <- builder.build()
-    } yield UnsignedTezosTransactionView(tx)
+    } yield {
+      if (tx.getType == TezosOperationTag.OPERATION_TAG_TRANSACTION && ti.feesSpeedLevel.isDefined) {
+        UnsignedTezosTransactionView(tx, ti.feesSpeedLevel.get)
+      } else UnsignedTezosTransactionView(tx)
+    }
   }
 
   def createTransaction(transactionInfo: TransactionInfo, a: core.Account, w: core.Wallet)(implicit ec: ExecutionContext): Future[TransactionView] = {

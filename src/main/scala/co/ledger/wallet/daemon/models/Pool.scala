@@ -233,12 +233,10 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
       if (currencyName == "ripple") {
         walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", s"${apiUrl.getProtocol}://${apiUrl.getHost}")
         walletConfig.putString("BLOCKCHAIN_EXPLORER_PORT", apiUrl.getPort.toString)
-      // FIXME get help about having a path already inside the endpoint
-      // it creates a wrong URL if not hardcoded, like https://xtz-explorer.api.live.ledger.com:-1/explorer:443
-      // which doesn't work because Core explorer HTTP calls end up being
-      // GET https://xtz-explorer.api.live.ledger.com:-1/explorer:443/block/head
+        // TODO: libcore currently doesn't support path (only host). So /explorer has to be hardcoded.
+        // => https://ledgerhq.atlassian.net/browse/COIN-1198
       } else if (currencyName == "tezos") {
-        walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", "https://xtz-explorer.api.live.ledger.com/explorer")
+        walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", s"${apiUrl.getProtocol}://${apiUrl.getHost}:${apiUrl.getPort}/explorer")
       } else {
         walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", s"${apiUrl.getProtocol}://${apiUrl.getHost}:${apiUrl.getPort}")
       }

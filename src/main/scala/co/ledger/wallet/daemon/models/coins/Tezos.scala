@@ -146,23 +146,4 @@ object UnsignedTezosTransactionView {
       HexUtils.valueOf(tx.serialize())
     )
   }
-
-  def apply(tx: core.TezosLikeTransaction): UnsignedTezosTransactionView = {
-    UnsignedTezosTransactionView(
-      tx.getType,
-      tx.getHash,
-      Option(tx.getFees).map(fees => fees.toString),
-      Option(tx.getReceiver).map(recv => recv.toBase58),
-      tx.getSender.toBase58,
-      Option(tx.getValue).map(_.toString),
-      tx.getDate,
-      HexUtils.valueOf(tx.getSigningPubKey),
-      Try(tx.getCounter).toOption.map(counter => counter.asScala),
-      Option(tx.getGasLimit).map(limit => limit.toBigInt.asScala),
-      Try(tx.getStorageLimit).toOption.map(limit => limit.asScala),
-      tx.getBlockHash,
-      tx.getStatus,
-      HexUtils.valueOf(tx.serialize())
-    )
-  }
 }

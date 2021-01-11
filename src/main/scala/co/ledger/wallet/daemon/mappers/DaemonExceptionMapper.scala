@@ -122,6 +122,11 @@ class DaemonExceptionMapper @Inject()(response: ResponseBuilder)
         )
       case e: InvalidErc20OperationsListException =>
         ResponseSerializer.serializeInternalError(request, response, e)
+      case e: InvalidCurrencyForDelegation =>
+        ResponseSerializer.serializeBadRequest(request,
+          daemonExceptionInfo(e),
+          response
+        )
     }
   }
 }

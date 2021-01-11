@@ -132,6 +132,10 @@ case class InvalidErc20OperationsListException() extends {
   val msg = "Invalid list of operations received from the libcore. Operations will not be published."
 } with DaemonException(msg)
 
+case class InvalidCurrencyForDelegation(msg: String) extends {
+  val code = ErrorCodes.INVALID_CURRENCY_FOR_DELEGATION
+} with DaemonException(msg)
+
 sealed abstract class DaemonException(msg: String, t: Throwable = null) extends Exception(msg, t) {
   def code: Int
   def msg: String
@@ -162,4 +166,5 @@ object ErrorCodes {
   val CORE_DATABASE_EXCEPTION = 304
   val INVALID_URL_EXCEPTION = 305
   val INVALID_ERC20_OPERATIONS_LIST_EXCEPTION = 306
+  val INVALID_CURRENCY_FOR_DELEGATION = 307
 }

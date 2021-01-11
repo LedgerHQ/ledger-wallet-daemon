@@ -504,42 +504,44 @@ object Account extends Logging {
       }
     }
 
-    for {
-      fees <- ti.fees.map(Future.successful).getOrElse(
-        // TODO: Should be lazily evaluated instead
-        ti.operationType match {
-          case TezosOperationTag.OPERATION_TAG_TRANSACTION if ti.fees.isEmpty => Future.successful(0.toBigInt)
-          case _ => tezosAccount.getFees() map { res =>
-            // make sure tfeeMethodhe fees are within reasonable bounds ( in [2500 ; 30000] )
-            res.asScala.max(scala.math.BigInt(2500)).min(scala.math.BigInt(30000))
+    try {
+      for {
+        fees <- ti.fees.map(Future.successful).getOrElse(
+          // TODO: Should be lazily evaluated instead
+          ti.operationType match {
+            case TezosOperationTag.OPERATION_TAG_TRANSACTION if ti.fees.isEmpty => Future.successful(0.toBigInt)
+            case _ => tezosAccount.getFees() map { res =>
+              // make sure tfeeMethodhe fees are within reasonable bounds ( in [2500 ; 30000] )
+              res.asScala.max(scala.math.BigInt(2500)).min(scala.math.BigInt(30000))
+            }
           }
+        )
+        gasLimit <- ti.gasLimit.map(Future.successful).getOrElse(
+          // TODO: Should be lazily evaluated instead
+          ti.operationType match {
+            case TezosOperationTag.OPERATION_TAG_TRANSACTION => Future.successful(0.toBigInt)
+            case _ => tezosAccount.getEstimatedGasLimit(ti.recipient).map(_.asScala)
+          }
+        )
+        storageLimit <- ti.storageLimit match {
+          case Some(amount) => Future.successful(amount)
+          case None => Future.successful(scala.math.BigInt(257))
         }
-      )
-      gasLimit <- ti.gasLimit.map(Future.successful).getOrElse(
-        // TODO: Should be lazily evaluated instead
-        ti.operationType match {
-          case TezosOperationTag.OPERATION_TAG_TRANSACTION => Future.successful(0.toBigInt)
-          case _ => tezosAccount.getEstimatedGasLimit(ti.recipient).map(_.asScala)
-        }
-      )
-      storageLimit <- ti.storageLimit match {
-        case Some(amount) => Future.successful(amount)
-        case None => Future.successful(scala.math.BigInt(257))
-      }
 
-      _ = builder.setFees(currency.convertAmount(fees))
-      _ = builder.setGasLimit(currency.convertAmount(gasLimit))
-      _ = builder.setStorageLimit(storageLimit.asCoreBigInt)
+        _ = builder.setFees(currency.convertAmount(fees))
+        _ = builder.setGasLimit(currency.convertAmount(gasLimit))
+        _ = builder.setStorageLimit(storageLimit.asCoreBigInt)
 
-      _ = builder.setType(ti.operationType)
-      // build and parse as unsigned tx view
-      // libcore is responsible for creating/injecting the reveal operation if necessary
-      // libcore also sets fees/gasLimit if values were not set
-      tx <- builder.build()
-    } yield {
-      if (tx.getType == TezosOperationTag.OPERATION_TAG_TRANSACTION && ti.feesSpeedLevel.isDefined) {
+        _ = builder.setType(ti.operationType)
+        // build and parse as unsigned tx view
+        // libcore is responsible for creating/injecting the reveal operation if necessary
+        // libcore also sets fees/gasLimit if values were not set
+        tx <- builder.build()
+      } yield {
         UnsignedTezosTransactionView(tx, ti.feesSpeedLevel.get)
-      } else UnsignedTezosTransactionView(tx)
+      }
+    } catch {
+      case e: Throwable => Future.failed(e)
     }
   }
 
@@ -683,11 +685,12 @@ object Account extends Logging {
   def getDelegation(a: Account)(implicit ec: ExecutionContext): Future[Seq[DelegationView]] = {
     a.getWalletType match {
       case WalletType.TEZOS => a.asTezosLikeAccount().getCurrentDelegate()
-        .filter(address => !address.isEmpty)
-        .map(DelegationView.fromDelegatedAddress)
-        .map(List(_))
-        .recover { case _: java.util.NoSuchElementException => List[DelegationView]() }
-      case _ => Future.successful(List())
+        .map(address => {
+          if (!address.isEmpty) {
+            List(DelegationView.fromDelegatedAddress(address))
+          } else List()
+        })
+      case otherCurrency => throw InvalidCurrencyForDelegation(s"Delegation is not available for current ${otherCurrency}")
     }
   }
 

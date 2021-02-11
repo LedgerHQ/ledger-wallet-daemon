@@ -471,7 +471,7 @@ ethereum = {
 
 tezos = {
 node = {
-        host = "https://xtz-node.api.live.ledger.com"
+        host = "https://xtz-node.api.vault.ledger.com"
         host = ${?XTZ_NODE}
         port = 443
         port = ${?XTZ_NODE_PORT}

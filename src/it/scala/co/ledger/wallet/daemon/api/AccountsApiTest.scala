@@ -311,19 +311,23 @@ class AccountsApiTest extends APIFeatureTest {
     val walletName = "ethRopstenWallet"
     assertWalletCreation(poolName, walletName, "ethereum_ropsten", Status.Ok)
     assertCreateAccount(CORRECT_BODY_ETH_ROPSTEN, poolName, walletName, Status.Ok)
+    Thread.sleep(1000)
     // Expect one address on eth accounts
     val addresses = parse[Seq[FreshAddressView]](assertGetFreshAddresses(poolName, walletName, index = 0, Status.Ok))
     info(s"ETH address : $addresses")
     assert(addresses.size == 1)
+    Thread.sleep(1000)
 
     // Sync and get operations, check the two firsts pages does not have any intersections
     awaitSyncAccount(poolName, walletName, 0)
+    Thread.sleep(1000)
 
     val response: PackedOperationsView = parse[PackedOperationsView](assertGetAccountOps(poolName, walletName, 0, OperationQueryParams(None, None, 5, 0), Status.Ok))
     val response2: PackedOperationsView = parse[PackedOperationsView](assertGetAccountOps(poolName, walletName, 0, OperationQueryParams(None, response.next, 5, 0), Status.Ok))
     assert(response.operations.size == 5)
     assert(response2.operations.size == 5)
     assert(response2.operations.intersect(response.operations).isEmpty)
+    Thread.sleep(1000)
 
     // Balance history on 3 days, end exclusive, no new operations on the interval
     val historyResponse = parse[HistoryResponse](history(poolName, walletName, 0, "2020-04-13T00:00:00Z", "2020-04-16T00:00:00Z", TimePeriod.DAY.toString, Status.Ok))

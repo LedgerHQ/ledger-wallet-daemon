@@ -38,15 +38,15 @@ class EthereumDao(protected val db: Database, protected val poolName: String) ex
         "ORDER BY ercop.date " + order.value +
         s" OFFSET $offset LIMIT $limit"
 
-  private val erc20OperationFromBlockHeightQuery: (Int, String, Long, Int, Int) => SQLQuery =
-    (accountIndex: Int, walletName: String, blockHeight: Long, offset: Int, limit: Int) =>
+  private val erc20OperationFromBlockHeightQuery: (Int, String, Ordering.OperationOrder, Long, Int, Int) => SQLQuery =
+    (accountIndex: Int, walletName: String, order: Ordering.OperationOrder, blockHeight: Long, offset: Int, limit: Int) =>
       s"""
         |SELECT ercop.uid as erc_uid, ercop.ethereum_operation_uid as eth_uid, ercop.receiver, ercop.value
         | FROM wallets w, erc20_operations ercop, erc20_accounts ercacc, ethereum_accounts ethacc
         | WHERE w.name='$walletName' AND ethacc.idx='$accountIndex'
         | AND ethacc.wallet_uid = w.uid AND ercop.account_uid = ercacc.uid AND ercacc.ethereum_account_uid = ethacc.uid
         | AND ercop.block_height >= '$blockHeight'
-        | ORDER BY ercop.date " + order.value
+        | ORDER BY ercop.date ${order.value}
         | OFFSET $offset LIMIT $limit
         | """.stripMargin.replaceAll("\n", " ")
 
@@ -249,7 +249,7 @@ class EthereumDao(protected val db: Database, protected val poolName: String) ex
   }
 
   private def queryERC20OperationsFromBlockHeightFullView(a: Account, w: Wallet, blockHeight: Long, offset: Int, limit: Int)(f: Row => OperationView): Future[Seq[OperationView]] = {
-    db.executeQuery(erc20OperationFromBlockHeightQuery(a.getIndex, w.getName, blockHeight, offset, limit))(f)
+    db.executeQuery(erc20OperationFromBlockHeightQuery(a.getIndex, w.getName, Ordering.Ascending, blockHeight, offset, limit))(f)
   }
 
   private def rowToFullOperationView(w: Wallet, accountIndex: Int)(row: Row) = {

@@ -18,6 +18,8 @@ sqlite3 = {
   connectionPool = disabled
 }
 
+# Configuration of the prefix for all keys is done through `postgres.core.db_name_prefix` in order to keep a uniformity
+# between prefix in postgres and in redis
 redis = {
     host = "localhost"
     host = ${?REDIS_HOST}

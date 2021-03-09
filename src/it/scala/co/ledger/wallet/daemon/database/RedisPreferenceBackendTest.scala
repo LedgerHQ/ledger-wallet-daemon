@@ -22,6 +22,7 @@ object RedisPreferenceBackendTest extends Logging {
     Some(config.getInt("redis.db"))
   } else None
   private val redisClientConfiguration: RedisClientConfiguration = RedisClientConfiguration(
+    dbPrefix = "wd",
     poolName = "redis_test_pool",
     host = config.getString("redis.host"),
     port = config.getInt("redis.port"),

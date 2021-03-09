@@ -323,8 +323,10 @@ object Pool extends Logging {
     val maybeRedisConf = for {
       host <- Try(config.getString("redis.host"))
       port <- Try(config.getInt("redis.port"))
+      dbPrefix <- Try(config.getString("postgres.db_name_prefix"))
     } yield {
       RedisClientConfiguration(
+        dbPrefix = dbPrefix,
         poolName = poolDto.name,
         host = host,
         port = port,

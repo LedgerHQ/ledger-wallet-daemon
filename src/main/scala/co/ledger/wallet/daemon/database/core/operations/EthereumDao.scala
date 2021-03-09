@@ -41,12 +41,18 @@ class EthereumDao(protected val db: Database, protected val poolName: String) ex
   private val erc20OperationFromBlockHeightQuery: (Int, String, Ordering.OperationOrder, Long, Int, Int) => SQLQuery =
     (accountIndex: Int, walletName: String, order: Ordering.OperationOrder, blockHeight: Long, offset: Int, limit: Int) =>
       s"""
-        |SELECT ercop.uid as erc_uid, ercop.ethereum_operation_uid as eth_uid, ercop.receiver, ercop.value
-        | FROM wallets w, erc20_operations ercop, erc20_accounts ercacc, ethereum_accounts ethacc
-        | WHERE w.name='$walletName' AND ethacc.idx='$accountIndex'
-        | AND ethacc.wallet_uid = w.uid AND ercop.account_uid = ercacc.uid AND ercacc.ethereum_account_uid = ethacc.uid
+        |SELECT ercop.uid as erc_uid, ercop.ethereum_operation_uid as eth_uid, ercop.receiver, ercop.value, ercop.type,
+        | ercop.date, ethop.transaction_hash, b.height as block_height, b.time as block_time, b.hash as block_hash,
+        | o.amount, o.fees, o.senders, o.recipients, etx.gas_price, etx.gas_limit, etx.gas_used, etx.status, etx.confirmations
+        | FROM accounts a, wallets w, operations o, ethereum_operations ethop, erc20_operations ercop, ethereum_transactions etx, blocks b
+        | WHERE w.name='$walletName' AND a.idx='$accountIndex' AND a.wallet_uid=w.uid
+        | AND a.uid = o.account_uid
+        | AND etx.block_uid=b.uid
+        | AND ercop.ethereum_operation_uid = o.uid
+        | AND ercop.ethereum_operation_uid = ethop.uid
+        | AND ethop.transaction_uid = etx.transaction_uid
         | AND ercop.block_height >= '$blockHeight'
-        | ORDER BY ercop.date ${order.value}
+        | ORDER BY o.date ${order.value}
         | OFFSET $offset LIMIT $limit
         | """.stripMargin.replaceAll("\n", " ")
 
